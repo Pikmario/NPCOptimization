@@ -1,0 +1,20 @@
+{
+	"general_settings": 
+	{
+		"population_size": 500,
+		"new_generation_factor": 10,
+		"generations": 100000
+	},
+	"town_fitness_modifiers": 
+	{
+		"pylon_amount_multiplier": 10,
+		"pylon_diff_multiplier": 25,
+		"correct_pylon_amount_bonus": 25
+	},
+	"npc_happiness_multipliers": 
+	{
+		"Guide": 0,
+		"Goblin Tinkerer": 10,
+		"Mechanic": 5
+	}
+}

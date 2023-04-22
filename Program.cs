@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace NPCOptimization
 {
@@ -184,14 +186,6 @@ namespace NPCOptimization
 				},
 			};
 
-			Dictionary<string, double> happiness_fitness_multipiers = new Dictionary<string, double>
-			{
-				{ "Goblin Tinkerer", 10 },
-				{ "Mechanic", 5 },
-				{ "Guide", 0 },
-				{ "Tax Collector", 5 }
-			};
-
 			Dictionary<string, List<string>> princess = new Dictionary<string, List<string>> {
 				{ "Loves", new List<string> {} },
 				{ "Likes", new List<string> {} },
@@ -207,9 +201,13 @@ namespace NPCOptimization
 			}
 			preferences["Princess"] = princess;
 
-			int population_size = 500;
-			int new_generation_size = population_size / 10;
-			int generations = 1000000;
+			npc_optimization_options options = new npc_optimization_options();
+
+			Dictionary<string, double> happiness_fitness_multipiers = options.npc_happiness_multipliers;
+
+			int population_size = options.general_settings["population_size"];
+			int new_generation_size = population_size / options.general_settings["new_generation_factor"];
+			int generations = options.general_settings["generations"];
 
 			List<npc_setup> population = new List<npc_setup>();
 			List<npc_setup> new_generation = new List<npc_setup>();
@@ -320,17 +318,16 @@ namespace NPCOptimization
 					}
 				}
 
-				//int pylon_amount = npc_setup.get_purchasable_pylons().Count;
 				int pylon_amount = npc_setup.get_highest_pylon_combo_count();
 
-				fitness += pylon_amount * 10;
+				fitness += pylon_amount * options.town_fitness_modifiers["pylon_amount_multiplier"];
 
 				int diff = npc_setup.count_towns() - pylon_amount;
-				fitness -= Math.Abs(diff) * 25;
+				fitness -= Math.Abs(diff) * options.town_fitness_modifiers["pylon_diff_multiplier"];
 
 				if (npc_setup.town_count == pylon_amount)
 				{
-					fitness += 25;
+					fitness += options.town_fitness_modifiers["correct_pylon_amount_bonus"];
 				}
 
 				npc_setup.fitness = fitness;
@@ -570,13 +567,12 @@ namespace NPCOptimization
 				int npc_to_move_id = random.Next(arrangement_from.npcs.Count());
 				string npc_to_move = arrangement_from.npcs[npc_to_move_id];
 
-				if (npc_to_move == "Truffle" || npc_to_move == "Witch Doctor")
+				if (npc_to_move == "Truffle")
 				{
 					i--;
 					continue;
 				}
 
-				//Console.WriteLine("Moving " + npc_to_move + " from " + list_of_arrangements[biome_from].biome + " to " + list_of_arrangements[biome_to].biome);
 				this.list_of_arrangements[biome_from].npcs.Remove(npc_to_move);
 				this.list_of_arrangements[biome_to].npcs.Add(npc_to_move);
 			}
@@ -742,5 +738,22 @@ namespace NPCOptimization
 			"Underground",
 			"Forest",
 		};
+	}
+
+	public class npc_optimization_options
+	{
+		public Dictionary<string, int> general_settings = new Dictionary<string, int>();
+		public Dictionary<string, double> town_fitness_modifiers = new Dictionary<string, double>();
+		public Dictionary<string, double> npc_happiness_multipliers = new Dictionary<string, double>();
+
+		public npc_optimization_options()
+		{
+			string options_json = File.ReadAllText("options.json");
+			Dictionary<string, dynamic> options = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(options_json);
+
+			this.general_settings = options["general_settings"].ToObject<Dictionary<string, int>>();
+			this.town_fitness_modifiers = options["town_fitness_modifiers"].ToObject<Dictionary<string, double>>();
+			this.npc_happiness_multipliers = options["npc_happiness_multipliers"].ToObject<Dictionary<string, double>>();
+		}
 	}
 }
